@@ -1,0 +1,13 @@
+{
+    "PolicyName": "InvalidVersionPolicy",
+    "PolicyDocument": {
+        "Version": "2000-01-01",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": ["iam:ChangePassword"],
+                "Resource": ["*"]
+            }
+        ]
+    }
+}

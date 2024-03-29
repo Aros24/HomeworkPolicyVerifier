@@ -2,7 +2,6 @@ package policy
 
 import (
 	"encoding/json"
-	"errors"
 )
 
 type Policy struct {
@@ -43,7 +42,7 @@ func (textToMarshall *SliceString) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	return errors.New("invalid format for sliced string")
+	return UnmarshalError("invalid format for sliced string")
 }
 
 func UnmarshalPolicy(data []byte) (*Policy, error) {

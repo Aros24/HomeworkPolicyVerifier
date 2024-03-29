@@ -2,7 +2,6 @@ package utils
 
 import (
 	"encoding/json"
-	"errors"
 	"log"
 	"os"
 	"path/filepath"
@@ -23,7 +22,7 @@ func ReadInput(inputPathOrString string) ([]byte, error) {
 	}
 
 	if !isValidJSON(data) {
-		return nil, errors.New("provided input is not in valid JSON format")
+		return nil, InputWrongJsonFormatError(ErrWrongJsonFormat)
 	}
 
 	return data, nil

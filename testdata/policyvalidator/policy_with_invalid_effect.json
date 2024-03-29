@@ -1,0 +1,13 @@
+{
+    "PolicyName": "PolicyWithInvalidEffect",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Permit",
+                "Action": ["ec2:StartInstances"],
+                "Resource": ["arn:aws:ec2:us-east-1:123456789012:instance/i-1234567890abcdef0"]
+            }
+        ]
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "PolicyName": "ComplexPolicy",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "Stmt1",
+                "Effect": "Allow",
+                "Action": ["s3:ListBucket"],
+                "Resource": ["arn:aws:s3:::example_bucket"]
+            },
+            {
+                "Sid": "Stmt2",
+                "Effect": "Deny",
+                "Action": ["s3:DeleteObject"],
+                "Resource": ["arn:aws:s3:::example_bucket/*"],
+                "Condition": {
+                    "Bool": {
+                        "aws:MultiFactorAuthPresent": "true"
+                    }
+                }
+            }
+        ]
+    }
+}

@@ -1,18 +1,16 @@
 package policy
 
 import (
-	"errors"
 	"regexp"
-	"strconv"
 )
 
 func (policy *Policy) ValidatePolicy() error {
 	if policy.PolicyName == "" {
-		return errors.New("policy name is required")
+		return PolicyNameMissingError(ErrPolicyNameRequired)
 	}
 	matched, _ := regexp.MatchString(`^[\w+=,.@-]{1,128}$`, policy.PolicyName)
 	if !matched {
-		return errors.New("policy name does not match the required pattern")
+		return PolicyNamePaternError(ErrPolicyNameInvalidPattern)
 	}
 
 	return policy.PolicyDocument.validateDocument()
@@ -20,12 +18,12 @@ func (policy *Policy) ValidatePolicy() error {
 
 func (policyDocument *PolicyDocument) validateDocument() error {
 	if policyDocument.Version != "2012-10-17" && policyDocument.Version != "2008-10-17" {
-		return errors.New("unsupported policy version: " + policyDocument.Version)
+		return PolicyVersionError(ErrPolicyVersionUnsupported)
 	}
 
-	for i, stmt := range policyDocument.Statement {
+	for _, stmt := range policyDocument.Statement {
 		if err := stmt.validateStatement(); err != nil {
-			return errors.New("statement " + strconv.Itoa(i) + ": " + err.Error())
+			return err
 		}
 	}
 	return nil
@@ -33,15 +31,15 @@ func (policyDocument *PolicyDocument) validateDocument() error {
 
 func (statement *Statement) validateStatement() error {
 	if statement.Effect != "Allow" && statement.Effect != "Deny" {
-		return errors.New("invalid effect: " + statement.Effect)
+		return PolicyEffectValueError(ErrStatementEffectInvalid)
 	}
 
 	if len(statement.Action) == 0 {
-		return errors.New("at least one action is required")
+		return PolicyMissingActionError(ErrStatementActionMissing)
 	}
 
 	if len(statement.Resource) == 0 {
-		return errors.New("at least one resource is required")
+		return PolicyMissingResourceError(ErrStatementResourceMissing)
 	}
 	return nil
 }
