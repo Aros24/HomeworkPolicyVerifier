@@ -1,0 +1,23 @@
+{
+    "PolicyName": "ExamplePolicy",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "ExampleSid",
+                "Effect": "Allow",
+                "Action": "iam:ListRoles",
+                "Resource": "*"
+            },
+            {
+                "Sid": "ExampleSid2",
+                "Effect": "Allow",
+                "Action": "iam:ListRoles",
+                "Resource": [
+                    "arn:aws:s3:::confidential-data",
+                    "arn:aws:s3:::confidential-data/*"
+                  ]
+            }
+        ]
+    }
+}
