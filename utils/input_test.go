@@ -3,8 +3,9 @@ package utils
 import (
 	"io/fs"
 	"os"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestReadInput(t *testing.T) {
@@ -23,39 +24,34 @@ func TestReadInput(t *testing.T) {
 	}
 
 	tests := []struct {
-		name            string
-		input           string
-		want            string
-		expectError     bool
-		expectedErrType reflect.Type
+		name              string
+		input             string
+		want              string
+		expectedErrorType error
 	}{
 		{
-			name:            "ValidFile",
-			input:           tempFile.Name(),
-			want:            content,
-			expectError:     false,
-			expectedErrType: nil,
+			name:              "ValidFile",
+			input:             tempFile.Name(),
+			want:              content,
+			expectedErrorType: nil,
 		},
 		{
-			name:            "InvalidFile",
-			input:           "nonexistent.json",
-			want:            "",
-			expectError:     true,
-			expectedErrType: reflect.TypeOf((*fs.PathError)(nil)),
+			name:              "InvalidFileContent",
+			input:             "../testdata/readinput/invalidfilecontent.json",
+			want:              "",
+			expectedErrorType: InputWrongJsonFormatError(""),
 		},
 		{
-			name:            "DirectString",
-			input:           `{"direct": "input"}`,
-			want:            `{"direct": "input"}`,
-			expectError:     false,
-			expectedErrType: nil,
+			name:              "InvalidFile",
+			input:             "nonexistent.json",
+			want:              "",
+			expectedErrorType: (*fs.PathError)(nil),
 		},
 		{
-			name:            "MalformedJsonInput",
-			input:           `{"malformedJson": true,}`,
-			want:            "",
-			expectError:     true,
-			expectedErrType: reflect.TypeOf(InputWrongJsonFormatError("")),
+			name:              "WrongFileFormat",
+			input:             "../testdata/readinput/blanknotepad.txt",
+			want:              "",
+			expectedErrorType: WrongFileExtension(""),
 		},
 	}
 
@@ -63,17 +59,16 @@ func TestReadInput(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := ReadInput(test.input)
 
-			if test.expectError {
-				if err == nil {
-					t.Errorf("ReadInput() expected error, got none")
-				} else if reflect.TypeOf(err) != test.expectedErrType {
-					t.Errorf("ReadInput() error = %v, want %v", reflect.TypeOf(err), test.expectedErrType)
+			if test.expectedErrorType == nil {
+				assert.NoError(t, err, "expected no error")
+			} else {
+				if assert.Error(t, err, "expected an error") {
+					assert.IsType(t, test.expectedErrorType, err, "error type mismatch")
 				}
-			} else if err != nil {
-				t.Errorf("ReadInput() unexpected error = %v", err)
 			}
-			if string(got) != test.want {
-				t.Errorf("ReadInput() = %v, want %v", string(got), test.want)
+
+			if test.expectedErrorType != InputWrongJsonFormatError("") {
+				assert.Equal(t, test.want, string(got))
 			}
 		})
 	}

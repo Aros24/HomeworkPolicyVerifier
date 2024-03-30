@@ -17,12 +17,12 @@ func ReadInput(inputPathOrString string) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		data = []byte(inputPathOrString)
-	}
 
-	if !isValidJSON(data) {
-		return nil, InputWrongJsonFormatError(ErrWrongJsonFormat)
+		if !isValidJSON(data) {
+			return nil, InputWrongJsonFormatError(ErrWrongJsonFormat)
+		}
+	} else {
+		return nil, WrongFileExtension(ErrWrongFileExtension)
 	}
 
 	return data, nil

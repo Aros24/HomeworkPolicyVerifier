@@ -4,82 +4,71 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPolicy_Validate(t *testing.T) {
 	tests := []struct {
 		name              string
 		policyFile        string
-		expectError       bool
-		expectedErrorType reflect.Type
+		expectedErrorType error
 	}{
 		{
 			name:              "FullyDefinedValidPolicy",
 			policyFile:        "full_access_policy.json",
-			expectError:       false,
 			expectedErrorType: nil,
 		},
 		{
 			name:              "ValidPolicyWithMultipleStatements",
 			policyFile:        "complex_policy.json",
-			expectError:       false,
 			expectedErrorType: nil,
 		},
 		{
 			name:              "PolicyWithUnsupportedVersion",
 			policyFile:        "invalid_version_policy.json",
-			expectError:       true,
-			expectedErrorType: reflect.TypeOf(PolicyVersionError("")),
+			expectedErrorType: PolicyVersionError(""),
 		},
 		{
 			name:              "PolicyWithInvalidEffect",
 			policyFile:        "policy_with_invalid_effect.json",
-			expectError:       true,
-			expectedErrorType: reflect.TypeOf(PolicyEffectValueError("")),
+			expectedErrorType: PolicyEffectValueError(""),
 		},
 		{
 			name:              "PolicyWithoutName",
 			policyFile:        "policy_without_name.json",
-			expectError:       true,
-			expectedErrorType: reflect.TypeOf(PolicyNameMissingError("")),
+			expectedErrorType: PolicyNameMissingError(""),
 		},
 		{
 			name:              "PolicyWithInvalidName",
 			policyFile:        "policy_with_invalid_name.json",
-			expectError:       true,
-			expectedErrorType: reflect.TypeOf(PolicyNamePaternError("")),
+			expectedErrorType: PolicyNamePaternError(""),
 		},
 		{
 			name:              "PolicyWithoutResource",
 			policyFile:        "policy_without_resource.json",
-			expectError:       true,
-			expectedErrorType: reflect.TypeOf(PolicyMissingResourceError("")),
+			expectedErrorType: PolicyMissingResourceError(""),
 		},
 		{
 			name:              "PolicyWithoutAction",
 			policyFile:        "policy_without_action.json",
-			expectError:       true,
-			expectedErrorType: reflect.TypeOf(PolicyMissingActionError("")),
+			expectedErrorType: PolicyMissingActionError(""),
 		},
 		{
 			name:              "InvalidPolicyNameProperty",
 			policyFile:        "invalid_policy_name_property.json",
-			expectError:       true,
-			expectedErrorType: reflect.TypeOf(PolicyNameMissingError("")),
+			expectedErrorType: PolicyNameMissingError(""),
 		},
 		{
 			name:              "InvalidVersionProperty",
 			policyFile:        "invalid_version_property.json",
-			expectError:       true,
-			expectedErrorType: reflect.TypeOf(PolicyVersionError("")),
+			expectedErrorType: PolicyVersionError(""),
 		},
 		{
 			name:              "MissingRequiredProperty",
 			policyFile:        "missing_required_property.json",
-			expectError:       true,
-			expectedErrorType: reflect.TypeOf(PolicyNameMissingError("")),
+			expectedErrorType: PolicyNameMissingError(""),
 		},
 	}
 
@@ -88,26 +77,20 @@ func TestPolicy_Validate(t *testing.T) {
 			path := filepath.Join("../testdata/policyvalidator", test.policyFile)
 
 			data, err := os.ReadFile(path)
-			if err != nil {
-				t.Fatalf("Failed to read %s: %v", test.policyFile, err)
-			}
+			assert.NoError(t, err, "Failed to read %s", test.policyFile)
 
 			var policy Policy
 			err = json.Unmarshal(data, &policy)
-			if err != nil {
-				t.Fatalf("Failed to unmarshal policy from %s: %v", test.policyFile, err)
-			}
+			assert.NoError(t, err, "Failed to unmarshal policy from %s", test.policyFile)
 
 			err = policy.ValidatePolicy()
 
-			if test.expectError {
-				if err == nil {
-					t.Errorf("Policy.Validate() expected error, got none")
-				} else if reflect.TypeOf(err) != test.expectedErrorType {
-					t.Errorf("Policy.Validate() error = %T, want %T", err, test.expectedErrorType)
+			if test.expectedErrorType == nil {
+				assert.NoError(t, err, "expected no error")
+			} else {
+				if assert.Error(t, err, "expected an error") {
+					assert.IsType(t, test.expectedErrorType, err, "error type mismatch")
 				}
-			} else if err != nil {
-				t.Errorf("Policy.Validate() unexpected error = %v", err)
 			}
 		})
 	}
@@ -134,17 +117,16 @@ func TestPolicyDocument_HasSpecificResources(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			path := filepath.Join("../testdata/policyvalidator", test.policyFile)
 			data, err := os.ReadFile(path)
-			if err != nil {
-				t.Fatalf("Failed to read file %s: %v", test.policyFile, err)
-			}
+			assert.NoError(t, err, "Failed to read file: %s", test.policyFile)
 
 			var policyDoc PolicyDocument
-			if err := json.Unmarshal(data, &policyDoc); err != nil {
-				t.Fatalf("Failed to unmarshal policy document from %s: %v", test.policyFile, err)
-			}
+			err = json.Unmarshal(data, &policyDoc)
+			assert.NoError(t, err, "Failed to unmarshal policy document: %s", test.policyFile)
 
-			if got := policyDoc.HasSpecificResources(); got != test.wantErr {
-				t.Errorf("PolicyDocument.HasSpecificResources() = %v, want %v", got, test.wantErr)
+			if test.wantErr {
+				assert.True(t, policyDoc.HasSpecificResources(), "Expected specific resources for test: %s", test.name)
+			} else {
+				assert.False(t, policyDoc.HasSpecificResources(), "Expected wildcard resource for test: %s", test.name)
 			}
 		})
 	}

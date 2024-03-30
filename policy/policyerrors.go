@@ -9,6 +9,7 @@ const (
 	ErrStatementActionMissing      = "at least one action is required"
 	ErrStatementResourceMissing    = "at least one resource is required"
 	ErrSpecificResourceRequirement = "specific resource requirement not met"
+	errUnmarshalSlicedString       = "invalid format for sliced string"
 )
 
 type PolicyNamePaternError string

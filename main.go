@@ -9,11 +9,16 @@ import (
 )
 
 func main() {
-	inputFlag := flag.String("input", "", "Path to a JSON file or a JSON string")
+	if len(os.Args) < 2 {
+		log.Println("No flags provided. Please use the -input option to specify a JSON file path.")
+		os.Exit(1)
+	}
+
+	inputFlag := flag.String("input", "", "Path to a JSON file")
 	flag.Parse()
 
 	if *inputFlag == "" {
-		log.Println("No input provided. Please use the -input option to specify a JSON file path or a JSON string.")
+		log.Println("No input provided. Please use the -input option to specify a JSON file path.")
 		os.Exit(1)
 	}
 
@@ -33,8 +38,6 @@ func main() {
 		log.Printf("Policy validation failed: %v\n", err)
 		os.Exit(1)
 	}
-
-	log.Printf("Policy Name: %s\nPolicy Document: %+v\n", parsedPolicy.PolicyName, parsedPolicy.PolicyDocument)
 
 	if parsedPolicy.PolicyDocument.HasSpecificResources() {
 		log.Println("The policy specifies specific resources for all statements.")

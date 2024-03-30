@@ -2,6 +2,7 @@ package policy
 
 import (
 	"encoding/json"
+	"regexp"
 )
 
 type Policy struct {
@@ -10,8 +11,8 @@ type Policy struct {
 }
 
 type PolicyDocument struct {
-	Version   string      `json:"Version"`
-	Statement []Statement `json:"Statement"`
+	Version    string      `json:"Version"`
+	Statements []Statement `json:"Statement"`
 }
 
 type Statement struct {
@@ -28,6 +29,8 @@ type Condition struct {
 	Bool map[string]string `json:"Bool"`
 }
 
+const policyNamePattern = `^[\w+=,.@-]{1,128}$`
+
 // Overload if has only one or multiple values (Array)
 func (textToMarshall *SliceString) UnmarshalJSON(data []byte) error {
 	var singleValue string
@@ -42,7 +45,7 @@ func (textToMarshall *SliceString) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	return UnmarshalError("invalid format for sliced string")
+	return UnmarshalError(errUnmarshalSlicedString)
 }
 
 func UnmarshalPolicy(data []byte) (*Policy, error) {
@@ -52,4 +55,87 @@ func UnmarshalPolicy(data []byte) (*Policy, error) {
 		return nil, err
 	}
 	return &p, nil
+}
+
+func (policy *Policy) ValidatePolicy() error {
+	if policy.PolicyName == "" {
+		return PolicyNameMissingError(ErrPolicyNameRequired)
+	}
+	matched, _ := regexp.MatchString(policyNamePattern, policy.PolicyName)
+	if !matched {
+		return PolicyNamePaternError(ErrPolicyNameInvalidPattern)
+	}
+
+	return policy.PolicyDocument.validateDocument()
+}
+
+type versionSupport struct {
+	supportedVersions []string
+}
+
+var supportedVersionInstance = versionSupport{
+	supportedVersions: []string{"2012-10-17", "2008-10-17"},
+}
+
+func (policy *PolicyDocument) isVersionSupported() bool {
+	for _, supportedVersion := range supportedVersionInstance.supportedVersions {
+		if policy.Version == supportedVersion {
+			return true
+		}
+	}
+	return false
+}
+
+func (policyDocument *PolicyDocument) validateDocument() error {
+	if !policyDocument.isVersionSupported() {
+		return PolicyVersionError(ErrPolicyVersionUnsupported)
+	}
+
+	for _, stmt := range policyDocument.Statements {
+		if err := stmt.validateStatement(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type effectSupport struct {
+	supportedEffects []string
+}
+
+var supportedEffectInstance = effectSupport{
+	supportedEffects: []string{"Allow", "Deny"},
+}
+
+func (statement Statement) isEffectSupported() bool {
+	for _, supportedEffect := range supportedEffectInstance.supportedEffects {
+		if statement.Effect == supportedEffect {
+			return true
+		}
+	}
+	return false
+}
+
+func (statement *Statement) validateStatement() error {
+	if !statement.isEffectSupported() {
+		return PolicyEffectValueError(ErrStatementEffectInvalid)
+	}
+
+	if len(statement.Action) == 0 {
+		return PolicyMissingActionError(ErrStatementActionMissing)
+	}
+
+	if len(statement.Resource) == 0 {
+		return PolicyMissingResourceError(ErrStatementResourceMissing)
+	}
+	return nil
+}
+
+func (policyDocument *PolicyDocument) HasSpecificResources() bool {
+	for _, statement := range policyDocument.Statements {
+		if len(statement.Resource) == 1 && statement.Resource[0] == "*" {
+			return false
+		}
+	}
+	return true
 }
