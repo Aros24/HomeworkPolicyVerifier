@@ -8,9 +8,14 @@ import (
 	"os"
 )
 
+const msgProvidePath = `Please use the -input option to specify a JSON file path.`
+
 func main() {
 	if len(os.Args) < 2 {
-		log.Println("No flags provided. Please use the -input option to specify a JSON file path.")
+		log.Println("No flag provided." + msgProvidePath)
+		os.Exit(1)
+	} else if os.Args[1] != "-input" {
+		log.Println("Wrong flag provided." + msgProvidePath)
 		os.Exit(1)
 	}
 
@@ -18,7 +23,7 @@ func main() {
 	flag.Parse()
 
 	if *inputFlag == "" {
-		log.Println("No input provided. Please use the -input option to specify a JSON file path.")
+		log.Println("No input provided." + msgProvidePath)
 		os.Exit(1)
 	}
 
